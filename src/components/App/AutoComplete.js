@@ -1,6 +1,7 @@
 import React from 'react';
 import classes from 'classnames';
 import withClickOutside from 'react-click-outside';
+import uuid from 'uuid/v1';
 
 import PropTypes from 'prop-types';
 import styles from './AutoComplete.module.css';
@@ -12,6 +13,11 @@ class AutoComplete extends React.Component {
     hoveredOption: null,
     value: '',
   };
+
+  constructor(props) {
+    super(props);
+    this._uniqeId = uuid();
+  }
 
   static propTypes = {
     options: PropTypes.array.isRequired,
@@ -46,11 +52,35 @@ class AutoComplete extends React.Component {
   };
 
   _hoverOption = option => {
+    const optionIndex = this._getOptionIndex(option, this.props.options);
+
+    const queryId = `${this._uniqeId}@${optionIndex}`;
+    const optionElement = document.querySelector(`[id='${queryId}']`);
+
+    const optionRangeStart = optionElement.offsetTop;
+    const optionRangeEnd =
+      optionRangeStart + optionElement.getBoundingClientRect().height;
+
+    const visibleRangeStart =
+      this._optionsRef.offsetTop + this._optionsRef.scrollTop;
+    const visibleRangeEnd =
+      visibleRangeStart + this._optionsRef.getBoundingClientRect().height;
+
+    const scrollIfNeeded = () => {
+      if (optionRangeStart < visibleRangeStart) {
+        const toScroll = optionRangeStart - visibleRangeStart;
+        this._optionsRef.scrollBy(0, toScroll);
+      } else if (optionRangeEnd > visibleRangeEnd) {
+        const toScroll = optionRangeEnd - visibleRangeEnd;
+        this._optionsRef.scrollBy(0, toScroll);
+      }
+    };
+
     this.setState(() => {
       return {
         hoveredOption: option,
       };
-    });
+    }, scrollIfNeeded);
   };
 
   _onOptionOut = () => {
@@ -77,8 +107,8 @@ class AutoComplete extends React.Component {
     });
   };
 
+  // used by `withClickOutside` HOC
   handleClickOutside() {
-    // used by `withClickOutside` HOC
     this._closeOptions();
   }
 
@@ -92,7 +122,7 @@ class AutoComplete extends React.Component {
     return selectedOption && selectedOption.value === option.value;
   };
 
-  _selectOption = (e) => {
+  _selectOption = e => {
     const { hoveredOption } = this.state;
     if (!hoveredOption) {
       return;
@@ -133,7 +163,6 @@ class AutoComplete extends React.Component {
   };
 
   _hoverPrevOption = () => {
-    const i = 0;
     const { hoveredOption } = this.state;
     const { options } = this.props;
 
@@ -180,6 +209,7 @@ class AutoComplete extends React.Component {
     const isOptionSelected = this._isOptionSelected(option);
     return (
       <div
+        id={`${this._uniqeId}@${idx}`}
         key={`option${idx}`}
         className={classes(
           styles.option,
@@ -200,6 +230,7 @@ class AutoComplete extends React.Component {
     const { opened } = this.state;
     return (
       <div
+        ref={ref => (this._optionsRef = ref)}
         className={classes(
           styles.options,
           opened ? styles.options_opened : styles.options_closed,
