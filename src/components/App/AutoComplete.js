@@ -217,8 +217,7 @@ class AutoComplete extends React.Component {
           !isOptionSelected && isOptionHovered ? styles.option_hover : {},
         )}
         onClick={() => this._onOptionClick(option)}
-        onMouseOver={() => this._hoverOption(option)}
-        onMouseOut={() => this._onOptionOut()}
+        onMouseMove={() => this._hoverOption(option)}
       >
         {option.displayValue}
       </div>
